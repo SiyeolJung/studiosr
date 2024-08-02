@@ -131,7 +131,7 @@ StudioSR is an open-source library under the **MIT license**.
 
 ### Note
 기본적인 코드는 위의 명령어를 통하여 동작하며, min-max scaling을 수행한 데이터 기준으로 코드를 구성하였습니다. 
-세부적인 코드 단위의 수정이 아래와 같이 필요합니다.
+경로 지정을 위한 코드 단위의 수정이 아래와 같이 필요합니다.
 
 <b>Training</b>  
 train_hat32.py 파일에 아래와 같은 내용의 수정이 필요합니다.
@@ -146,7 +146,7 @@ Dataset dir가 아래와 같이 구성되어 있을 때의 root 경로를 지정
 - ckpt_path  
  ckpt파일의 저장을 희망하는 폴더명을 입력해주시면 됩니다.(폴더가 존재하지 않으면 폴더를 자동으로 생성합니다)
 
-<b>Inference</b>
+<b>Inference</b>  
 test_hat32.py 파일에 아래와 같은 내용의 수정이 필요합니다.  
 - model_dir  
 .pth 파일이 저장되어있는 폴더의 경로를 입력해주시면 됩니다
