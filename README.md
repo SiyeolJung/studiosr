@@ -101,4 +101,58 @@ psnr, ssim = evaluator(model.inference)
 | HAT    | x 2   | DF2K             | 38.605 | 34.845 | 32.590 | 34.418   |
 
 ## License
-StudioSR is an open-source library under the **MIT license**. 
+StudioSR is an open-source library under the **MIT license**.
+
+
+
+## For the Galaxy Image Restoration
+### Environment setting
+1. Conda 환경 생성
+    ```sh
+    conda create -n studiosr python=3.8
+    ```
+
+2. 생성한 환경 활성화
+    ```sh
+    conda activate studiosr
+    ```
+
+3. 필요한 패키지 설치
+    ```sh
+    pip install -r requirements.txt
+    ```
+
+### HAT model image size (32x32->64x64)
+    - Training - 
+        python trian_hat32.py
+    
+    - Inference -
+        python test_hat32.py
+
+### Note
+기본적인 코드는 위의 명령어를 통하여 동작하며, min-max scaling을 수행한 데이터 기준으로 코드를 구성하였습니다. 
+세부적인 코드 단위의 수정이 아래와 같이 필요합니다.
+
+<b>Training</b>  
+train_hat32.py 파일에 아래와 같은 내용의 수정이 필요합니다.
+- dataset_dir  
+Dataset dir가 아래와 같이 구성되어 있을 때의 root 경로를 지정해주시면 됩니다.  
+```plaintext
+├── root/
+    ├── train/
+    ├── valid/
+    └── test/
+```
+- ckpt_path  
+ ckpt파일의 저장을 희망하는 폴더명을 입력해주시면 됩니다.(폴더가 존재하지 않으면 폴더를 자동으로 생성합니다)
+
+<b>Inference</b>
+test_hat32.py 파일에 아래와 같은 내용의 수정이 필요합니다.  
+- model_dir  
+.pth 파일이 저장되어있는 폴더의 경로를 입력해주시면 됩니다
+
+- test_dir  
+test파일이 내포된 폴더의 경로를 입력해주시면 됩니다.
+
+- save_path  
+inference 결과물울 저장할 폴더의 경로를 입력해주면 됩니다.
