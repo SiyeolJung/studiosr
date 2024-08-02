@@ -66,7 +66,8 @@ class Trainer:
         self.gamma = gamma
 
         self.device = get_device()
-        self.dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() and bfloat16 else torch.float32
+        # self.dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() and bfloat16 else torch.float32
+        self.dtype = torch.float32
         self.seed = seed
 
         self.optimizer = None
@@ -104,12 +105,13 @@ class Trainer:
                 loss = self.criterion(out, y)
 
             loss.backward()
+
             self.optimizer.step()
             self.optimizer.zero_grad(set_to_none=True)
             self.scheduler.step()
 
             iterations = self.data_handler.iterations
-            print(f" Iterations = {iterations:<8}", end="\r")
+            print(f" Iterations = {iterations:<8} Loss = {loss:<8}", end="\r")
             if iterations % self.eval_interval == 0 and self.data_handler.is_main_process:
                 psnr, ssim = self.evaluate()
                 log = f" Iterations = {iterations:<8}  PSNR: {psnr:6.3f} SSIM: {ssim:6.4f}"

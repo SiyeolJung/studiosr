@@ -60,7 +60,6 @@ class DataHandler:
             self.ddp_world_size = 1
             self.is_main_process = True
             self.sampler = None
-
         dataloader = DataLoader(
             self.dataset,
             batch_size=self.batch_size // self.ddp_world_size,

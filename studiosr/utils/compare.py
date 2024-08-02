@@ -89,3 +89,18 @@ def compare(images: list, crop_size: int = 64, zoom_size: int = 256):
             zoom_size = clip(zoom_size - 4, 32, 512)
         elif key == ord("x") or key == ord("X"):
             zoom_size = clip(zoom_size + 4, 32, 512)
+
+
+def ours_compare(images: list, crop_size: int = 64, zoom_size: int = 256, file_name : str = 'comapred', save_path : str = './'):
+    # save_path = [self.sr_save_path, self.nn_save_path, self.bc_save_path]
+    # saving images and npy
+    views = []
+    labels = ["LQ","NN","BICUBIC", "SR", "HR"]
+    for image, label in zip(images, labels):
+        view = image.copy()
+        if label == 'NN':
+            np.save(f"{save_path[1]}/{file_name}.npy", view)
+        if label == 'BICUBIC':
+            np.save(f"{save_path[2]}/{file_name}.npy", view)
+        if label == 'SR':
+            np.save(f"{save_path[0]}/{file_name}.npy", view)

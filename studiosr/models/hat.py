@@ -7,6 +7,8 @@ import torch
 import torch.nn as nn
 from einops import rearrange
 from timm.layers import DropPath, trunc_normal_
+import torch.nn.init as init
+
 
 from studiosr.models.common import (
     Mlp,
@@ -383,7 +385,7 @@ class RHAG(nn.Module):
 
     def forward(self, x: torch.Tensor, x_size: List[int], params: Dict) -> torch.Tensor:
         return self.patch_embed(self.conv(self.patch_unembed(self.residual_group(x, x_size, params), x_size))) + x
-
+    
 
 class HAT(Model):
     def __init__(
@@ -430,7 +432,7 @@ class HAT(Model):
         self.register_buffer("relative_position_index_SA", relative_position_index_SA)
         self.register_buffer("relative_position_index_OCA", relative_position_index_OCA)
 
-        self.normalizer = Normalizer(img_range=img_range)
+        self.normalizer = Normalizer()
         self.conv_first = nn.Conv2d(n_colors, embed_dim, 3, 1, 1)
         self.patch_embed = PatchEmbed(embed_dim=embed_dim, norm_layer=nn.LayerNorm)
         self.patch_unembed = PatchUnEmbed(embed_dim=embed_dim)
@@ -463,6 +465,7 @@ class HAT(Model):
 
         num_feat = 64
         self.conv_before_upsample = nn.Sequential(nn.Conv2d(embed_dim, num_feat, 3, 1, 1), nn.LeakyReLU(inplace=True))
+
         self.upsample = Upsampler(scale, num_feat)
         self.conv_last = nn.Conv2d(num_feat, n_colors, 3, 1, 1)
 
@@ -533,7 +536,6 @@ class HAT(Model):
 
         for layer in self.layers:
             x = layer(x, x_size, params)
-
         x = self.norm(x)  # b seq_len c
         x = self.patch_unembed(x, x_size)
 
@@ -542,15 +544,13 @@ class HAT(Model):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         H, W = x.shape[2:]
         x = check_image_size(x, self.window_size)
-
-        x = self.normalizer.normalize(x)
-
+        # original_x = x
+        # x = self.normalizer.normalize(x) # Grayscale이라서 우선 없애줌 min max도 했기 때문
         x = self.conv_first(x)
         x = self.conv_after_body(self.forward_features(x)) + x
         x = self.conv_before_upsample(x)
         x = self.conv_last(self.upsample(x))
-
-        x = self.normalizer.unnormalize(x)
+        # x = self.normalizer.unnormalize(x,original_x) # Grayscale이라서 우선 없애줌 minmax도 했기 때문
         return x[:, :, : H * self.scale, : W * self.scale]
 
     def get_model_config(self) -> Dict:
@@ -589,5 +589,13 @@ class HAT(Model):
         if not os.path.exists(path):
             gdown.download(id=file_id, output=path, quiet=False)
         pretrained = torch.load(path, map_location="cpu")["params_ema"]
+        model.load_state_dict(pretrained)
+        return model
+
+    def from_our_pretrained(scale: int = 4, n_colors: int=1, model_dir: str = '/home3/t202401082/studiosr/checkpoints_hat_3264') -> "HAT":
+        model = HAT(scale=scale, n_colors=n_colors)
+        file_name = f"best.model.pth"
+        path = os.path.join(model_dir, file_name)
+        pretrained = torch.load(path, map_location="cpu") #["params_ema"]
         model.load_state_dict(pretrained)
         return model

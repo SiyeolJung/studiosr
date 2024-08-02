@@ -38,14 +38,13 @@ def compute_psnr(im1: np.ndarray, im2: np.ndarray, y_only: bool = False, crop_bo
     if crop_border:
         im1 = im1[crop_border:-crop_border, crop_border:-crop_border]
         im2 = im2[crop_border:-crop_border, crop_border:-crop_border]
-    if y_only:
+    if y_only: 
         im1, im2 = to_y(im1), to_y(im2)
-    elif im1.dtype != np.uint8:
-        im1, im2 = im1 * 255.0, im2 * 255.0
     error = np.mean((im1.astype(np.float32) - im2.astype(np.float32)) ** 2)
     if error == 0:
         return np.inf
-    p = 20 * np.log10(255.0 / np.sqrt(error))
+    p = 20 * np.log10(1. / np.sqrt(error))
+    # p =  10. * np.log10(1.**2 / error)
     return p
 
 
@@ -57,6 +56,7 @@ def compute_ssim(im1: np.ndarray, im2: np.ndarray, y_only: bool = False, crop_bo
     if y_only:
         im1, im2 = to_y(im1), to_y(im2)
     channel_axis = 2 if is_rgb(im1) else None
+    
     s = ssim(
         im1,
         im2,
@@ -66,6 +66,6 @@ def compute_ssim(im1: np.ndarray, im2: np.ndarray, y_only: bool = False, crop_bo
         sigma=1.5,
         use_sample_covariance=False,
         channel_axis=channel_axis,
-        data_range=255,
+        data_range=1.,
     )
     return s

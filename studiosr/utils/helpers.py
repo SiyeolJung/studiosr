@@ -48,6 +48,27 @@ def imwrite(path: str, image: np.ndarray) -> bool:
     result = cv2.imwrite(path, image)
     return result
 
+def normalize_image(image: np.ndarray) -> np.ndarray:
+    image_min = np.min(image)
+    image_max = np.max(image)
+    image_normalized = 255 * (image - image_min) / (image_max - image_min)
+    return image_normalized.astype(np.float32)
+
+def imread_grayscale(path: str) -> np.ndarray:
+    image = np.load(path).astype(np.float32)
+    if np.isnan(image).any():
+        print(f"NaN values found in the array from path: {path}")
+    if np.isinf(image).any():
+        print(f"INF values found in the array from path: {path}")
+    image = np.expand_dims(image, axis=2)
+    
+    return image
+
+def imwrite_grayscale(path: str, image: np.ndarray) -> bool:
+    image = cv2.cvtColor(image, cv2.IMREAD_GRAYSCALE)
+    result = cv2.imwrite(path, image)
+    return result
+
 
 class Logger:
     def __init__(
@@ -93,7 +114,7 @@ class Logger:
 
 
 def get_image_extensions() -> List[str]:
-    return [".bmp", ".jpeg", ".jpg", ".jpe", ".jp2", ".png", ".webp", ".tiff", ".tif"]
+    return [".bmp", ".jpeg", ".jpg", ".jpe", ".jp2", ".png", ".webp", ".tiff", ".tif",".npy"]
 
 
 def get_image_files(root: str) -> List[str]:

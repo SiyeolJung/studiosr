@@ -56,7 +56,7 @@ def paired_random_rot90(
 
 def array2tensor(array: np.ndarray) -> torch.Tensor:
     array = array.transpose(2, 0, 1)
-    array = array.astype(np.float32) / 255
+    # array = array.astype(np.float32) / 255
     tensor = torch.from_numpy(array)
     return tensor
 

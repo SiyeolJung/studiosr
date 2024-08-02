@@ -8,8 +8,150 @@ from torch.utils.data import Dataset
 from tqdm import tqdm
 
 from studiosr.data import transforms as T
-from studiosr.utils import gdown_and_extract, get_image_files, imread
+from studiosr.utils import gdown_and_extract, get_image_files, imread, imread_grayscale
+class Test_GalaxyPairedImageDataset(Dataset):
+    """
+    A PyTorch Dataset class for handling paired image data used in image super-resolution tasks.
 
+    Args:
+        gt_path (str): The path to the directory containing ground-truth high-resolution images.
+        lq_path (str): The path to the directory containing low-quality (input) images.
+        size (int, optional): The size of patches to extract from images (default is 48).
+        scale (int, optional): The scaling factor for super-resolution (default is 4).
+        transform (bool, optional): Apply data augmentation transformations (default is False).
+        to_tensor (bool, optional): Convert images to PyTorch tensors (default is False).
+
+    Note:
+        This dataset class is designed for image super-resolution tasks, where it pairs low-quality
+        input images (lq) with corresponding high-quality ground-truth images (gt). It supports
+        data augmentation and converting images to PyTorch tensors, making it suitable for training
+        deep learning models.
+    """
+
+    def __init__(
+        self,
+        gt_path: str,
+        lq_path: str,
+        size: int = 48,
+        scale: int = 4,
+        transform: bool = False,
+        to_tensor: bool = False,
+    ) -> None:
+        self.gt_path = gt_path
+        self.lq_path = lq_path
+        self.files = get_image_files(gt_path)
+        self.size = size
+        self.scale = scale
+        self.transform = transform
+        self.to_tensor = to_tensor
+
+        if self.transform:
+            self.transform = T.Compose(
+                [
+                    T.RandomCrop(self.size, self.scale),
+                    T.RandomHorizontalFlip(),
+                    T.RandomVerticalFlip(),
+                    T.RandomRotation90(),
+                ]
+            )
+        if self.to_tensor:
+            self.to_tensor = T.ToTensor()
+    def __len__(self) -> int:
+        return len(self.files)
+
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
+        file_name ,lq, gt = self.get_image_pair(idx)
+        if self.transform:
+            lq, gt = self.transform(lq, gt)
+        if self.to_tensor:
+            lq, gt = self.to_tensor(lq, gt)
+        return file_name, lq, gt
+
+    def get_image_pair(self, idx: int) -> Tuple[np.ndarray, np.ndarray]:
+        file = self.files[idx]
+        lq_path = os.path.join(self.lq_path, file)
+        gt_path = os.path.join(self.gt_path, file)
+        file_name = file.split('.')[0]
+        lq = imread_grayscale(lq_path)
+        gt = imread_grayscale(gt_path) 
+        return file_name, lq, gt
+    
+class GalaxyPairedImageDataset(Dataset):
+    """
+    A PyTorch Dataset class for handling paired image data used in image super-resolution tasks.
+
+    Args:
+        gt_path (str): The path to the directory containing ground-truth high-resolution images.
+        lq_path (str): The path to the directory containing low-quality (input) images.
+        size (int, optional): The size of patches to extract from images (default is 48).
+        scale (int, optional): The scaling factor for super-resolution (default is 4).
+        transform (bool, optional): Apply data augmentation transformations (default is False).
+        to_tensor (bool, optional): Convert images to PyTorch tensors (default is False).
+
+    Note:
+        This dataset class is designed for image super-resolution tasks, where it pairs low-quality
+        input images (lq) with corresponding high-quality ground-truth images (gt). It supports
+        data augmentation and converting images to PyTorch tensors, making it suitable for training
+        deep learning models.
+    """
+
+    def __init__(
+        self,
+        gt_path: str,
+        lq_path: str,
+        size: int = 48,
+        scale: int = 4,
+        transform: bool = False,
+        to_tensor: bool = False,
+    ) -> None:
+        self.gt_path = gt_path
+        self.lq_path = lq_path
+        self.files = get_image_files(gt_path)
+        self.size = size
+        self.scale = scale
+        self.transform = transform
+        self.to_tensor = to_tensor
+
+        if self.transform:
+            self.transform = T.Compose(
+                [
+                    T.RandomCrop(self.size, self.scale),
+                    T.RandomHorizontalFlip(),
+                    T.RandomVerticalFlip(),
+                    T.RandomRotation90(),
+                ]
+            )
+        if self.to_tensor:
+            self.to_tensor = T.ToTensor()
+    def __len__(self) -> int:
+        return len(self.files)
+
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
+        lq, gt = self.get_image_pair(idx)
+        retry_count = 0
+        while True:
+            lq, gt = self.get_image_pair(idx)
+            if not (np.isnan(lq).any() or np.isnan(gt).any()):
+                break
+            retry_count += 1
+            print(f"Dataset Nan values found in the array from path: {os.path.join(self.lq_path, self.files[idx])} or {os.path.join(self.gt_path, self.files[idx])}")
+            print(f"Retry count: {retry_count}")
+            idx = np.random.randint(0, len(self.files))
+
+        if self.transform:
+            lq, gt = self.transform(lq, gt)
+        if self.to_tensor:
+            lq, gt = self.to_tensor(lq, gt)
+        return lq, gt
+
+    def get_image_pair(self, idx: int) -> Tuple[np.ndarray, np.ndarray]:
+        file = self.files[idx]
+        lq_path = os.path.join(self.lq_path, file)
+        gt_path = os.path.join(self.gt_path, file)
+        
+        lq = imread_grayscale(lq_path)
+        gt = imread_grayscale(gt_path)
+        return lq, gt
 
 class PairedImageDataset(Dataset):
     """
@@ -275,3 +417,28 @@ class DF2K:
         lq = imread(lq_path)
         gt = imread(gt_path)
         return lq, gt
+
+
+class Galaxy(GalaxyPairedImageDataset):
+    dataset_name = "Galaxy"
+
+    def __init__(
+        self,
+        dataset_dir: str,
+        size: int = 48,
+        scale: int = 4,
+        transform: bool = False,
+        to_tensor: bool = False,
+        download: bool = False,
+    ):
+        dataset_path = dataset_dir
+        gt_path = os.path.join(dataset_path, f"train/gt_minmax")
+        lq_path = os.path.join(dataset_path, f"train/lr_minmax")
+        super().__init__(
+            gt_path=gt_path,
+            lq_path=lq_path,
+            size=size,
+            scale=scale,
+            transform=transform,
+            to_tensor=to_tensor,
+        )

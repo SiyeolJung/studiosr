@@ -1,4 +1,4 @@
-from studiosr.utils.compare import compare
+from studiosr.utils.compare import compare, ours_compare
 from studiosr.utils.helpers import (
     Logger,
     count_parameters,
@@ -9,6 +9,8 @@ from studiosr.utils.helpers import (
     get_image_files,
     imread,
     imwrite,
+    imread_grayscale,
+    imwrite_grayscale
 )
 from studiosr.utils.losses import CharbonnierLoss
 from studiosr.utils.metrics import compute_psnr, compute_ssim

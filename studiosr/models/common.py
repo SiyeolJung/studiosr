@@ -36,13 +36,14 @@ class Model(nn.Module):
     @torch.inference_mode()
     def inference(self, image: np.ndarray) -> np.ndarray:
         self.eval()
-        scale = 255.0 if self.img_range == 1.0 else 1.0
+        scale = 1.0
         device = next(self.parameters()).get_device()
         device = torch.device("cpu") if device < 0 else device
         image = torch.from_numpy(image.astype(np.float32) / scale).to(device)
-        x = image.permute(2, 0, 1).unsqueeze(0)
+        x = image.permute(2, 0, 1).unsqueeze(0)        
+
         output = self.forward(x)[0].permute(1, 2, 0) * scale
-        output = output.round().clip(0, 255).to(torch.uint8)
+        output = output.clip(0,1).to(torch.float32)
         output = output.cpu().numpy()
         torch.cuda.empty_cache()
         return output
@@ -218,20 +219,19 @@ class PatchUnEmbed(nn.Module):
         x = x.transpose(1, 2).view(B, self.embed_dim, x_size[0], x_size[1])
         return x
 
-
 class Normalizer(nn.Module):
-    def __init__(self, img_range: float = 1.0, img_mean: List[float] = [0.4488, 0.4371, 0.4040]) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.img_range = img_range
-        self.img_mean = torch.Tensor(img_mean).view(1, 3, 1, 1)
 
     def normalize(self, x: torch.Tensor) -> torch.Tensor:
-        self.img_mean = self.img_mean.type_as(x)
-        return x / self.img_range - self.img_mean
+        mean = x.mean(dim=(1, 2, 3), keepdim=True)
+        std = x.std(dim=(1, 2, 3), keepdim=True)
+        return (x - mean) / (std + 1e-8)  # 1e-8을 더해 0으로 나누는 것을 방지
 
-    def unnormalize(self, x: torch.Tensor) -> torch.Tensor:
-        return (x + self.img_mean) * self.img_range
-
+    def unnormalize(self, x: torch.Tensor, original_tensor: torch.Tensor) -> torch.Tensor:
+        mean = original_tensor.mean(dim=(1, 2, 3), keepdim=True)
+        std = original_tensor.std(dim=(1, 2, 3), keepdim=True)
+        return x * (std + 1e-8) + mean
 
 def window_partition(x: torch.Tensor, window_size: List[int]) -> torch.Tensor:
     B, H, W, C = x.shape
