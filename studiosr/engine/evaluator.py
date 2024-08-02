@@ -384,6 +384,8 @@ class Test_Galaxy3264:
         crop_border = self.scale
         psnrs, ssims = [], []
 
+        if os.path.exists(self.save_path) == False:
+            os.makedirs(self.save_path)
         if os.path.exists(self.sr_save_path) == False:
             os.makedirs(self.sr_save_path)
         if os.path.exists(self.nn_save_path) == False:
